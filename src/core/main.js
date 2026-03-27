@@ -1734,6 +1734,36 @@ export class BeeBreedingApp {
         this.changeLanguage(event.target.value);
       });
     }
+
+    // Set up mod filter checkboxes
+    this.setupModFilterListeners();
+  }
+  
+  setupModFilterListeners() {
+    // Add event listeners to mod filter checkboxes
+    const checkboxes = document.querySelectorAll(".mod-filter-checkbox");
+    checkboxes.forEach((checkbox) => {
+      // Create a bound version of the handler
+      const handler = this.handleModFilterChange.bind(this);
+      // Store the handler reference on the checkbox for later removal
+      checkbox._modFilterHandler = handler;
+      // Add event listener
+      checkbox.addEventListener("change", handler);
+    });
+  }
+  
+  handleModFilterChange(event) {
+    const checkbox = event.target;
+    const modName = checkbox.value.toLowerCase();
+    
+    if (checkbox.checked) {
+      this.selectedMods.add(modName);
+    } else {
+      this.selectedMods.delete(modName);
+    }
+    
+    // Apply the filter
+    this.applyModFilter();
   }
   
   changeLanguage(lang) {
@@ -1836,10 +1866,17 @@ export class BeeBreedingApp {
     modFilterLabels.forEach(({ value, key }) => {
       const input = document.querySelector(`input[value="${value}"]`);
       if (input && input.parentElement) {
+        // Remove any existing event listener first
+        if (input._modFilterHandler) {
+          input.removeEventListener("change", input._modFilterHandler);
+        }
         const labelText = this.i18n.t(key);
         input.parentElement.innerHTML = `<input type="checkbox" class="mod-filter-checkbox" value="${value}" ${input.checked ? 'checked' : ''}> ${labelText}`;
       }
     });
+    
+    // Re-add event listeners to mod filter checkboxes after updating labels
+    this.setupModFilterListeners();
     
     // Update info panel if it's visible
     const infoPanel = document.getElementById('infoPanel');

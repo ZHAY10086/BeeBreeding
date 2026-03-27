@@ -5,27 +5,27 @@ export const zh = {
     error: "加载蜜蜂繁殖树失败"
   },
   controls: {
-    searchPlaceholder: "搜索蜜蜂种类...",
+    searchPlaceholder: "搜索蜜蜂品种...",
     fadedMode: "淡出模式",
     clear: "清除",
-    fit: "适配",
-    layout: "布局"
+    fit: "适配屏幕",
+    layout: "切换布局"
   },
   modFilters: {
     header: "模组过滤器",
-    forestry: "林业",
-    gendustry: "基因工业",
-    extrabees: "额外蜜蜂",
-    magicbees: "魔法蜜蜂",
-    careerbees: "职业蜜蜂",
-    meatballcraft: "肉丸工艺"
+    forestry: "林业（Forestry）",
+    gendustry: "基因工业（Gendustry）",
+    extrabees: "额外蜜蜂（ExtraBees）",
+    magicbees: "魔法蜜蜂（MagicBees）",
+    careerbees: "职业蜜蜂（CareerBees）",
+    meatballcraft: "肉丸工艺（Meatballcraft）"
   },
   infoPanel: {
     selectedBee: "已选择蜜蜂",
     generation: "世代:",
-    parents: "父母:",
-    children: "子女:",
-    baseSpecies: "无（基础物种）",
+    parents: "亲代：",
+    children: "子代：",
+    baseSpecies: "无（基础品种）",
     finalEvolution: "无（最终进化）"
   },
   error: {
