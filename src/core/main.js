@@ -758,7 +758,8 @@ export class BeeBreedingApp {
   }
 
   showInfo(selectedNode) {
-    document.getElementById("selectedBee").textContent =
+    // Update the bee name
+    document.getElementById("selectedBeeName").textContent =
       selectedNode.name || selectedNode.id;
     document.getElementById("generation").textContent = selectedNode.generation;
 

@@ -180,6 +180,20 @@
             max-width: 250px;
             display: none;
         }
+        
+        .info-panel h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #333;
+        }
+        
+        #selectedBeeName {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #007bff;
+        }
     </style>
 </head>
 <body>
@@ -247,7 +261,8 @@
     </script>
 
     <div class="info-panel" id="infoPanel">
-        <h4 id="selectedBee">Selected Bee</h4>
+        <h4>Selected Bee</h4>
+        <div id="selectedBeeName">Selected Bee</div>
         <div><strong>Generation:</strong> <span id="generation"></span></div>
         <div><strong>Parents:</strong>
             <div id="parents"></div>
