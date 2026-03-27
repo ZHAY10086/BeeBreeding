@@ -31,6 +31,8 @@ export class BeeBreedingApp {
     // Will be populated from HTML checkboxes on initialization
     this.selectedMods = new Set();
     this.isModFiltered = false;
+    // Search state
+    this.isSearching = false;
     // Internationalization
     this.i18n = new I18n();
   }
@@ -820,6 +822,11 @@ export class BeeBreedingApp {
   }
 
   resetHighlight() {
+    // Don't reset if we're in search mode
+    if (this.isSearching) {
+      return;
+    }
+    
     // Clear current selection
     this.currentSelectedNode = null;
 
@@ -1484,6 +1491,7 @@ export class BeeBreedingApp {
       searchTimeout = setTimeout(() => {
         if (searchTerm.length === 0) {
           // Empty search - show full tree
+          this.isSearching = false;
           if (this.isFilteredView) {
             this.restoreOriginalView();
           } else {
@@ -1491,6 +1499,7 @@ export class BeeBreedingApp {
           }
         } else {
           // Search for matching nodes with prioritization
+          this.isSearching = true;
           // Only search by display name, extracting bee name from mod-prefixed IDs if needed
           const matches = this.nodes.filter((n) => {
             // Extract display name - if no explicit name, extract from ID (e.g., "forestry:commonBee" -> "commonBee")
@@ -1539,6 +1548,7 @@ export class BeeBreedingApp {
             this.highlightMultipleNodes(partialMatches);
           } else {
             // No matches found - show full tree
+            this.isSearching = false;
             if (this.isFilteredView) {
               this.restoreOriginalView();
             } else {
