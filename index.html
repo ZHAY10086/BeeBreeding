@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Interactive Bee Breeding Tree</title>
+    <title id="pageTitle">Interactive Bee Breeding Tree</title>
     <link rel="icon" type="image/png" href="assets/icon.png">
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsonc-parser@3.2.0/lib/umd/main.js"></script>
@@ -195,6 +195,13 @@
             <button class="btn" onclick="fitView()">Fit</button>
             <button class="btn" id="layoutToggle" onclick="toggleLeafLayout()">Layout</button>
         </div>
+        <div style="margin-top: 8px; font-size: 12px;">
+            <label for="languageSelect">Language:</label>
+            <select id="languageSelect" class="language-select" style="font-size: 11px; padding: 2px;">
+                <option value="en">English</option>
+                <option value="zh">中文</option>
+            </select>
+        </div>
     </div>
 
     <div class="mod-filters-panel">
@@ -261,13 +268,21 @@
 
         // Initialize the application when DOM is loaded
         document.addEventListener('DOMContentLoaded', async () => {
+            let app;
             try {
                 console.log("Starting BeeBreedingApp initialization...");
-                const app = new BeeBreedingApp();
+                app = new BeeBreedingApp();
                 await app.initialize();
                 console.log("BeeBreedingApp initialized successfully!");
             } catch (error) {
                 console.error("Failed to initialize BeeBreedingApp:", error);
+
+                // Create a fallback i18n instance for error messages
+                if (!app) {
+                    // Import i18n directly for error handling
+                    const { I18n } = await import('./src/core/i18n/i18n.js');
+                    app = { i18n: new I18n() };
+                }
 
                 // Show error to user
                 const errorDiv = document.createElement('div');
@@ -280,13 +295,13 @@
                 errorDiv.style.border = '2px solid red';
                 errorDiv.style.zIndex = '10000';
                 errorDiv.innerHTML = `
-                    <h3>❌ Error Loading Bee Breeding Tree</h3>
+                    <h3>❌ ${app.i18n.t('app.error')}</h3>
                     <p><strong>Error:</strong> ${error.message}</p>
-                    <p>Please try:</p>
+                    <p>${app.i18n.t('error.try')}</p>
                     <ol>
-                        <li>Running a local server: <code>python -m http.server 8000</code></li>
-                        <li>Opening <code>http://localhost:8000</code> instead</li>
-                        <li>Checking browser console (F12) for details</li>
+                        <li>${app.i18n.t('error.localServer')}</li>
+                        <li>${app.i18n.t('error.openLocalhost')}</li>
+                        <li>${app.i18n.t('error.checkConsole')}</li>
                     </ol>
                 `;
                 document.body.appendChild(errorDiv);

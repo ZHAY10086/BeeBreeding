@@ -48,4 +48,10 @@ export const config = {
     SPLIT: "split",
     COLUMN: "column",
   },
+
+  // Language settings
+  language: {
+    defaultLanguage: "en",
+    availableLanguages: ["en", "zh"]
+  },
 };

@@ -7,6 +7,7 @@ import { renderEdges } from "../visualization/edgeRenderer.js";
 import { positionNodes } from "../visualization/layout.js";
 import { renderNodes } from "../visualization/nodeRenderer.js";
 import { config } from "./config.js";
+import { I18n } from "./i18n/i18n.js";
 
 export class BeeBreedingApp {
   constructor() {
@@ -30,12 +31,17 @@ export class BeeBreedingApp {
     // Will be populated from HTML checkboxes on initialization
     this.selectedMods = new Set();
     this.isModFiltered = false;
+    // Internationalization
+    this.i18n = new I18n();
   }
 
   async initialize() {
     console.log("Initializing BeeBreedingApp...");
 
     try {
+      // Load saved language
+      this.i18n.loadSavedLanguage();
+      
       // Read checkbox states FIRST, before building hierarchy
       this.readCheckboxStates();
 
@@ -44,13 +50,13 @@ export class BeeBreedingApp {
       console.log("Loaded bee data:", Object.keys(this.beeData).length, "bees");
 
       // Build full hierarchy and store it
-      this.fullHierarchyData = buildHierarchy(this.beeData);
+      this.fullHierarchyData = buildHierarchy(this.beeData, this.i18n);
 
       // Filter data based on checkbox states
       let filteredBeeData = this.getFilteredBeeData();
 
       // Build hierarchy with filtered data
-      this.hierarchyData = buildHierarchy(filteredBeeData);
+      this.hierarchyData = buildHierarchy(filteredBeeData, this.i18n);
       this.nodes = this.hierarchyData.nodes;
       this.links = this.hierarchyData.links;
       this.nodeMap = this.hierarchyData.nodeMap;
@@ -123,6 +129,9 @@ export class BeeBreedingApp {
 
       // Initial fit (show all bees)
       this.fitView();
+
+      // Update UI elements with current language
+      this.updateUIElements();
 
       console.log("Initialization complete");
     } catch (error) {
@@ -532,7 +541,7 @@ export class BeeBreedingApp {
     }
 
     // Rebuild hierarchy with filtered data
-    this.hierarchyData = buildHierarchy(filteredBeeData);
+    this.hierarchyData = buildHierarchy(filteredBeeData, this.i18n);
     this.nodes = this.hierarchyData.nodes;
     this.links = this.hierarchyData.links;
     this.nodeMap = this.hierarchyData.nodeMap;
@@ -753,6 +762,20 @@ export class BeeBreedingApp {
       selectedNode.name || selectedNode.id;
     document.getElementById("generation").textContent = selectedNode.generation;
 
+    // Update info panel labels by updating the specific strong elements
+    const strongElements = document.querySelectorAll("#infoPanel strong");
+    if (strongElements.length >= 3) {
+      strongElements[0].textContent = this.i18n.t('infoPanel.generation');
+      strongElements[1].textContent = this.i18n.t('infoPanel.parents');
+      strongElements[2].textContent = this.i18n.t('infoPanel.children');
+    }
+
+    // Update the h4 title
+    const infoPanelH4 = document.querySelector("#infoPanel h4");
+    if (infoPanelH4) {
+      infoPanelH4.textContent = this.i18n.t('infoPanel.selectedBee');
+    }
+
     // Display parent combinations
     const parentsDiv = document.getElementById("parents");
     if (
@@ -763,32 +786,35 @@ export class BeeBreedingApp {
         .map((combo) =>
           combo
             .map((parentId) => {
-              // Extract display name from mod-prefixed ID
+              // Get translated name from i18n
+              const translatedName = this.i18n.getBeeName(parentId);
               const parentNode = this.nodeMap.get(parentId);
-              return parentNode
+              return translatedName || (parentNode
                 ? parentNode.name || parentId.split(":")[1] || parentId
-                : parentId;
+                : parentId);
             })
             .join(" + ")
         )
         .join(" OR ");
       parentsDiv.textContent = parentText;
     } else {
-      parentsDiv.textContent = "None (Base species)";
+      parentsDiv.textContent = this.i18n.t('infoPanel.baseSpecies');
     }
 
     // Display children with their display names
     const childrenText = selectedNode.children
       .map((childId) => {
+        // Get translated name from i18n
+        const translatedName = this.i18n.getBeeName(childId);
         const childNode = this.nodeMap.get(childId);
-        return childNode
+        return translatedName || (childNode
           ? childNode.name || childId.split(":")[1] || childId
-          : childId;
+          : childId);
       })
       .join(", ");
 
     document.getElementById("children").textContent =
-      childrenText || "None (Final evolution)";
+      childrenText || this.i18n.t('infoPanel.finalEvolution');
     document.getElementById("infoPanel").style.display = "block";
   }
 
@@ -1696,6 +1722,130 @@ export class BeeBreedingApp {
     }
 
     console.log("Controls bound to window object");
+
+    // Set up language selector
+    const languageSelect = document.getElementById('languageSelect');
+    if (languageSelect) {
+      // Set initial value
+      languageSelect.value = this.i18n.getLanguage();
+      
+      // Add change event listener
+      languageSelect.addEventListener('change', (event) => {
+        this.changeLanguage(event.target.value);
+      });
+    }
+  }
+  
+  changeLanguage(lang) {
+    if (this.i18n.setLanguage(lang)) {
+      // Rebuild hierarchy with new language
+      this.fullHierarchyData = buildHierarchy(this.beeData, this.i18n);
+      
+      // Rebuild current hierarchy
+      let filteredBeeData = this.getFilteredBeeData();
+      this.hierarchyData = buildHierarchy(filteredBeeData, this.i18n);
+      this.nodes = this.hierarchyData.nodes;
+      this.links = this.hierarchyData.links;
+      this.nodeMap = this.hierarchyData.nodeMap;
+
+      // Recalculate node widths with new names
+      this.nodes.forEach((node) => {
+        const text = node.name || node.id;
+        node.width = Math.max(100, text.toUpperCase().length * 9 + 30);
+      });
+
+      // Reposition nodes
+      positionNodes(
+        this.nodes,
+        this.useColumnLayoutForLeaves
+          ? config.layoutModes.COLUMN
+          : config.layoutModes.SPLIT
+      );
+
+      // Reassign colors
+      this.nodeColors = this.assignNodeColors(this.nodes, this.nodeMap);
+
+      // Re-render visualization
+      this.g.selectAll("*").remove();
+      this.renderVisualization();
+
+      // Update UI elements
+      this.updateUIElements();
+      
+      // If there was a selected node, reselect it and show info panel
+      if (this.currentSelectedNode) {
+        const newNode = this.nodeMap.get(this.currentSelectedNode.id);
+        if (newNode) {
+          this.selectNode(newNode);
+        }
+      }
+    }
+  }
+  
+  updateUIElements() {
+    // Update page title
+    const pageTitle = document.getElementById('pageTitle');
+    if (pageTitle) {
+      pageTitle.textContent = this.i18n.t('app.title');
+    }
+    
+    // Update search placeholder
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+      searchInput.placeholder = this.i18n.t('controls.searchPlaceholder');
+    }
+    
+    // Update faded mode label
+    const fadedModeLabel = document.querySelector('label[for="filterModeToggle"]');
+    if (fadedModeLabel) {
+      fadedModeLabel.textContent = this.i18n.t('controls.fadedMode');
+    }
+    
+    // Update buttons
+    const clearButton = document.querySelector('button[onclick="resetHighlight()"]');
+    if (clearButton) {
+      clearButton.textContent = this.i18n.t('controls.clear');
+    }
+    
+    const fitButton = document.querySelector('button[onclick="fitView()"]');
+    if (fitButton) {
+      fitButton.textContent = this.i18n.t('controls.fit');
+    }
+    
+    const layoutButton = document.getElementById('layoutToggle');
+    if (layoutButton) {
+      layoutButton.textContent = this.i18n.t('controls.layout');
+    }
+    
+    // Update mod filters header
+    const modFiltersHeader = document.querySelector('.mod-filters-header h4');
+    if (modFiltersHeader) {
+      modFiltersHeader.textContent = this.i18n.t('modFilters.header');
+    }
+    
+    // Update mod filter labels
+    const modFilterLabels = [
+      { value: 'forestry', key: 'modFilters.forestry' },
+      { value: 'gendustry', key: 'modFilters.gendustry' },
+      { value: 'extrabees', key: 'modFilters.extrabees' },
+      { value: 'magicbees', key: 'modFilters.magicbees' },
+      { value: 'careerbees', key: 'modFilters.careerbees' },
+      { value: 'meatballcraft', key: 'modFilters.meatballcraft' }
+    ];
+    
+    modFilterLabels.forEach(({ value, key }) => {
+      const input = document.querySelector(`input[value="${value}"]`);
+      if (input && input.parentElement) {
+        const labelText = this.i18n.t(key);
+        input.parentElement.innerHTML = `<input type="checkbox" class="mod-filter-checkbox" value="${value}" ${input.checked ? 'checked' : ''}> ${labelText}`;
+      }
+    });
+    
+    // Update info panel if it's visible
+    const infoPanel = document.getElementById('infoPanel');
+    if (infoPanel && infoPanel.style.display === 'block' && this.currentSelectedNode) {
+      this.showInfo(this.currentSelectedNode);
+    }
   }
 
   readCheckboxStates() {

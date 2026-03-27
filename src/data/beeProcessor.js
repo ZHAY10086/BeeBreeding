@@ -1,7 +1,7 @@
 /**
  * Bee data processor for building hierarchical relationships
  */
-export function buildHierarchy(beeData) {
+export function buildHierarchy(beeData, i18n = null) {
   const nodes = [];
   const links = [];
   const nodeMap = new Map();
@@ -87,9 +87,10 @@ export function buildHierarchy(beeData) {
   // Create nodes with generation information
   allBees.forEach((bee) => {
     const generation = generationMap.get(bee) || 0;
+    const translatedName = i18n ? i18n.getBeeName(bee) : null;
     const node = {
       id: bee,
-      name: beeData[bee].name || bee.split(":")[1] || bee,
+      name: translatedName || beeData[bee].name || bee.split(":")[1] || bee,
       generation: generation,
       children: beeData[bee].children || [],
       parentCombinations: beeData[bee].parentCombinations || [],
